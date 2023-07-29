@@ -1,6 +1,9 @@
+# スクリプトが配置されているディレクトリを実行ディレクトリに設定
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Set-Location $scriptPath
+
 # envファイルのパス
 $envFilePath = ".\.env"
-
 
 if (Test-Path $envFilePath) {
     Write-Host "Info: Reading env file.: $envFilePath..."
@@ -18,17 +21,30 @@ if (Test-Path $envFilePath) {
 function Sync-Folder {
     param ($source, $destination)
 
-    $jobScriptBlock = {
-        param ($src, $dest)
-        $progress = "Syncing from $src to $dest ..."
-        Write-Host $progress
-        robocopy $src $dest /MIR /MOT:10 /W:1 /R:1 /XD *.tmp | ForEach-Object { Write-Host $_ }
+    try {
+        Write-Host "Syncing from $source to $destination ..."
+        robocopy $source $destination /MIR /W:1 /R:1 /XD *.tmp | ForEach-Object { Write-Host $_ }
+        Write-Host "Synced from $destination to $source ..."
     }
-
-    Start-Job -ScriptBlock $jobScriptBlock -ArgumentList $source, $destination
+    catch {
+        Write-Error "Error: Syncing from $source to $destination ... detail: $($_.exception.message) "
+    }
 }
 
 # フォルダの同期処理を実行する関数を実行
 foreach ($destinationFolder in $destinationFolders) {
+
+    # フォルダが存在しない場合はエラーを出力して終了
+    if (!(Test-Path $sourceFolder)) {
+        Write-Error "Error: Source folder is not exist.: $sourceFolder"
+        Exit 1
+    }
+
+    # フォルダが存在しない場合はエラーを出力して処理をスキップ
+    if (!(Test-Path $destinationFolder)) {
+        Write-Error "Error: Destination folder is not exist.: $destinationFolder"
+        continue
+    }
+
     Sync-Folder -source $sourceFolder -destination $destinationFolder
 }
