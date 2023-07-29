@@ -18,5 +18,5 @@ Windows 10以降
 
    ```
    # 例）
-   .\C:\Users\ユーザー名\Documents\myscript.ps1
+   .\C:\Users\ユーザー名\Documents\file_sync.ps1
    ```
